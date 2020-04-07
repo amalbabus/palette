@@ -23,7 +23,7 @@ parser.add_argument('-p','--palette',help="v:vertical palette and h:horizontal p
 parser.add_argument('-n','--nlargest',help="get first n common colors",metavar='',type=int)
 
 args = parser.parse_args()
-pt=prettytable.PrettyTable(['color','percentage','rgb'])
+pt=prettytable.PrettyTable(['hex code','percentage','(r,g,b)'])
 img=Image.open(args.image)
 w,h=img.width,img.height
 for i in tqdm(range(w),desc='Generating Table',unit='unit'):
@@ -31,15 +31,16 @@ for i in tqdm(range(w),desc='Generating Table',unit='unit'):
 		d=i,j
 		x,y,c=img.getpixel(d)
 		a.append('#'+hex(x)[2:].rjust(2,'0')+hex(y)[2:].rjust(2,'0')+hex(c)[2:].rjust(2,'0'))
-m=Counter(a).keys()
-n=Counter(a).values()
+m=list(Counter(a).keys())
+n=list(Counter(a).values())
+num = {'maxval':n}
 if args.nlargest:
-	lst=pd.Series(n)
-	t=lst.nlargest(int(abs(args.nlargest)))
+	lst=pd.DataFrame(num)
+	t=lst.nlargest(int(abs(args.nlargest)),'maxval')
 	res=t.index.values
 else:
-	lst=pd.Series(n)
-	t=lst.nlargest(10)
+	lst=pd.DataFrame(num)
+	t=lst.nlargest(10,'maxval')
 	res=t.index.values
 ty=''
 for i in res:
@@ -47,7 +48,7 @@ for i in res:
 for i in res:
 	e=wrap(str(m[i][1:]),2)
 	#ty+=str(int(e[0],16))+','+str(int(e[1],16))+','+str(int(e[2],16))
-	pt.add_row([m[i],((float(n[i])/k)*100),(int(e[0],16),int(e[1],16),int(e[2],16))])
+	pt.add_row([m[i],(str((float(n[i])/k)*100))[0:4],(int(e[0],16),int(e[1],16),int(e[2],16))])
 print("Palette generated")
 print(pt)
 if str(args.palette)=='v':
@@ -63,10 +64,11 @@ if str(args.palette)=='v':
 				img.putpixel((j,t),(aa,bb,cc,255))
 		font=ImageFont.truetype('lucida.ttf',20)
 		dr=ImageDraw.Draw(img)
+		txt = str(m[i])+'|'+str((float(n[i])/k)*100)[0:4]+'%'
 		if (aa<127 and bb<127 and cc<127):
-			dr.text((50,40),str(m[i]),font=font,fill='#ffffff')
+			dr.text((30,40),txt,font=font,fill='#ffffff')
 		else:
-			dr.text((50,40),str(m[i]),font=font,fill='#000000')
+			dr.text((30,40),txt,font=font,fill='#000000')
 		img.save(str(i)+'.jpg')
 	lis=[]
 
@@ -82,7 +84,7 @@ if str(args.palette)=='v':
 		xx+=100
 	for i in lis:
 		os.remove(i)
-	nme=args.image[:-4]+'_palette.jpg'
+	nme=args.image[:-4]+'_vpalette.jpg'
 
 	newim.save(nme)
 	print('Palette saved to {}\\{}'.format(os.getcwd(),nme))
@@ -98,10 +100,13 @@ elif str(args.palette)=='h':
 				img.putpixel((t,j),(aa,bb,cc,255))
 		font=ImageFont.truetype('lucida.ttf',20)
 		dr=ImageDraw.Draw(img)
+		# txt = str(m[i])+' : '+str((float(n[i])/k)*100)[0:4]+'%'
 		if (aa<127 and bb<127 and cc<127):
 			dr.text((10,90),str(m[i]),font=font,fill='#ffffff')
+			dr.text((25,120),str((float(n[i])/k)*100)[0:4]+'%',font=font,fill='#ffffff')
 		else:
 			dr.text((10,90),str(m[i]),font=font,fill='#000000')
+			dr.text((25,120),str((float(n[i])/k)*100)[0:4]+'%',font=font,fill='#000000')
 		img.save(str(i)+'.jpg')
 	lis=[]
 
@@ -117,9 +122,10 @@ elif str(args.palette)=='h':
 		xx+=100
 	for i in lis:
 		os.remove(i)
-	nme=args.image[:-4]+'_palette.jpg'
+	nme=args.image[:-4]+'_hpalette.jpg'
 
 	newim.save(nme)
 	print('Palette saved to {}\\{}'.format(os.getcwd(),nme))
 else:
 	pass
+
